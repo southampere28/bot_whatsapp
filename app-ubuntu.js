@@ -6,14 +6,15 @@ const fs = require('fs');
 const { Groq } = require('groq-sdk');
 const { GoogleGenAI } = require('@google/genai');
 
-// Create a new client instance - Ubuntu VPS version
-// Puppeteer akan otomatis download dan pakai Chromium
+// Create a new client instance
 const client = new Client({
     authStrategy: new LocalAuth(),
     puppeteer: {
+        executablePath: '/usr/bin/chromium-browser',
         args: [
             '--no-sandbox', 
-            '--disable-setuid-sandbox'
+            '--disable-setuid-sandbox',
+            '--disable-extensions'
         ],
         headless: true
     }
@@ -36,6 +37,7 @@ bot by mudydev
 ====================
         
 --list command--
+!ai (pertanyaan) = bot akan menjawab pertanyaan anda
 !help   = menampilkan bantuan dari bot
 !date   = waktu dan tanggal
 !ping   = bot merespon "pong"
@@ -100,7 +102,6 @@ tanggal ${wt_tanggal}/${wt_bulan}/${wt_tahun}`);
 
     aigemini: async (message, args) => {
         try {
-            // const aiClient = new GoogleGenAI({ apiKey: process.env.GOOGLE_API_KEY || 'YOUR_API_KEY' });
             const aiClient = new GoogleGenAI({ apiKey: process.env.GOOGLE_API_KEY });
             
             // Mengambil pertanyaan setelah kata '!ai '
@@ -139,8 +140,13 @@ tanggal ${wt_tanggal}/${wt_bulan}/${wt_tahun}`);
                 return;
             }
             
-            const chat = await message.getChat();
-            await chat.sendStateTyping();
+            // Try to send typing state, but don't fail if it errors
+            try {
+                const chat = await message.getChat();
+                await chat.sendStateTyping();
+            } catch (chatErr) {
+                console.log('Could not send typing state:', chatErr.message);
+            }
             
             const response = await groqClient.chat.completions.create({
                 messages: [
@@ -149,7 +155,7 @@ tanggal ${wt_tanggal}/${wt_bulan}/${wt_tahun}`);
                         content: question,
                     },
                 ],
-                model: "openai/gpt-oss-20b",
+                model: "llama-3.3-70b-versatile",
             });
             
             const reply = response.choices[0]?.message?.content || 'Maaf, AI tidak bisa menjawab pertanyaan itu';
