@@ -139,8 +139,13 @@ tanggal ${wt_tanggal}/${wt_bulan}/${wt_tahun}`);
                 return;
             }
             
-            const chat = await message.getChat();
-            await chat.sendStateTyping();
+            // Try to send typing state, but don't fail if it errors
+            try {
+                const chat = await message.getChat();
+                await chat.sendStateTyping();
+            } catch (chatErr) {
+                console.log('Could not send typing state:', chatErr.message);
+            }
             
             const response = await groqClient.chat.completions.create({
                 messages: [
@@ -149,7 +154,7 @@ tanggal ${wt_tanggal}/${wt_bulan}/${wt_tahun}`);
                         content: question,
                     },
                 ],
-                model: "openai/gpt-oss-20b",
+                model: "llama-3.3-70b-versatile",
             });
             
             const reply = response.choices[0]?.message?.content || 'Maaf, AI tidak bisa menjawab pertanyaan itu';
